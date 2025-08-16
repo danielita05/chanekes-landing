@@ -46,14 +46,16 @@ export default function AnimatedHeading({ text, as = "h1", className = "", glow 
       "<+=0.05",
     )
 
-    return () => tl.kill()
+    return () => {
+      tl.kill()
+    }
   }, [glow])
 
   return (
-    <Tag ref={ref} className={className + " tracking-tight"}>
+    <Tag ref={ref} className={className + " tracking-tight"} style={{ whiteSpace: 'pre' }}>
       {text.split("").map((ch, i) => (
         <span key={i} className="ah-letter inline-block will-change-transform">
-          {ch}
+          {ch === ' ' ? '\u00A0' : ch}
         </span>
       ))}
     </Tag>

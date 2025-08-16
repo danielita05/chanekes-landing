@@ -1,6 +1,7 @@
 "use client"
-import { useEffect, useRef } from "react"
-import { gsap } from "gsap"
+import { useRef } from "react"
+import { useGSAP, gsap, ANIMATION_CONFIG } from "@/lib/gsap"
+import { usePrefersReducedMotion } from "@/src/hooks/usePrefersReducedMotion"
 import Image from "next/image"
 
 const ITEMS = [
@@ -13,38 +14,66 @@ const ITEMS = [
 
 export default function ServicesScroller() {
   const wrapRef = useRef<HTMLDivElement>(null)
+  const prefersReducedMotion = usePrefersReducedMotion()
 
-  useEffect(() => {
+  // Auto-scroll y animaciones de hover
+  useGSAP(() => {
+    if (prefersReducedMotion || !wrapRef.current) return
+
     const el = wrapRef.current
-    if (!el) return
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches
-    if (reduce) return
-
-    // auto-scroll suave y retorno (no invasivo)
-    const tween = gsap.to(el, {
+    
+    // Auto-scroll suave y retorno
+    const scrollTween = gsap.to(el, {
       scrollLeft: () => el.scrollWidth - el.clientWidth,
       duration: 14,
       repeat: -1,
       yoyo: true,
       ease: "none",
-      paused: false,
     })
 
-    // pausa al interactuar
-    const stop = () => tween.pause()
-    const play = () => tween.resume()
+    // Hover effects en las cards
+    const cards = el.querySelectorAll('.service-card')
+    
+    cards.forEach(card => {
+      const handleMouseEnter = () => {
+        gsap.to(card, {
+          scale: 1.02,
+          rotateY: 2,
+          duration: ANIMATION_CONFIG.hover.duration,
+          ease: ANIMATION_CONFIG.hover.tilt.ease
+        })
+      }
+      
+      const handleMouseLeave = () => {
+        gsap.to(card, {
+          scale: 1,
+          rotateY: 0,
+          duration: ANIMATION_CONFIG.hover.duration,
+          ease: ANIMATION_CONFIG.hover.tilt.ease
+        })
+      }
+      
+      card.addEventListener('mouseenter', handleMouseEnter)
+      card.addEventListener('mouseleave', handleMouseLeave)
+    })
+
+    // Pausa al interactuar
+    const stop = () => scrollTween.pause()
+    const play = () => scrollTween.resume()
+    
     el.addEventListener("pointerdown", stop)
     el.addEventListener("pointerup", play)
     el.addEventListener("mouseenter", stop)
     el.addEventListener("mouseleave", play)
+    
     return () => {
-      tween.kill()
+      scrollTween.kill()
       el.removeEventListener("pointerdown", stop)
       el.removeEventListener("pointerup", play)
       el.removeEventListener("mouseenter", stop)
       el.removeEventListener("mouseleave", play)
     }
-  }, [])
+  }, { scope: wrapRef })
 
   return (
     <div ref={wrapRef} className="overflow-x-auto snap-x snap-mandatory scrollbar-none">
@@ -52,12 +81,18 @@ export default function ServicesScroller() {
         {ITEMS.map((it, i) => (
           <article
             key={i}
-            className="snap-start min-w-[260px] md:min-w-[320px] bg-gray-dark/70 ring-1 ring-white/10 rounded-2xl p-5 md:p-6 text-warm-white hover:ring-green-brand transition-colors"
+            className="service-card snap-start min-w-[260px] md:min-w-[320px] bg-gray-dark/70 ring-1 ring-white/10 rounded-2xl p-5 md:p-6 text-warm-white hover:ring-green-brand hover:shadow-lg hover:shadow-green-brand/20 transition-all duration-300"
+            style={{ willChange: 'transform' }}
           >
             <div className="relative w-full aspect-[4/3] overflow-hidden rounded-xl mb-4 bg-black/30">
-              <Image src={it.img || "/placeholder.svg"} alt={it.title} fill className="object-cover" />
+              <Image 
+                src={it.img || "/placeholder.svg"} 
+                alt={it.title} 
+                fill 
+                className="object-cover transition-transform duration-300 hover:scale-105" 
+              />
             </div>
-            <h3 className="text-lg md:text-xl font-bold">{it.title}</h3>
+            <h3 className="text-lg md:text-xl font-bold text-green-brand">{it.title}</h3>
             <p className="text-warm-white/80 text-sm md:text-base mt-1">{it.desc}</p>
           </article>
         ))}

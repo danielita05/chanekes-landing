@@ -1,8 +1,8 @@
 "use client"
 
-import { useEffect, useRef } from "react"
-import { gsap } from "gsap"
-import { useGSAPContext } from "@/lib/gsap"
+import { useRef } from "react"
+import { useGSAP, gsap, initScrollReveal, ANIMATION_CONFIG } from "@/lib/gsap"
+import { usePrefersReducedMotion } from "@/src/hooks/usePrefersReducedMotion"
 
 const testimonials = [
   {
@@ -30,50 +30,69 @@ const testimonials = [
 export default function TestimonialsSection() {
   const sectionRef = useRef<HTMLElement>(null)
   const cardsRef = useRef<HTMLDivElement>(null)
-  const ctx = useGSAPContext()
+  const prefersReducedMotion = usePrefersReducedMotion()
 
-  useEffect(() => {
-    if (!ctx || !sectionRef.current || !cardsRef.current) return
+  // Scroll reveal para título
+  initScrollReveal(sectionRef, '.reveal-item', {
+    yOffset: 30,
+    duration: 0.8
+  })
 
-    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
-    if (prefersReducedMotion) return
+  // Animación alternada para testimonials (izquierda/derecha)
+  useGSAP(() => {
+    if (prefersReducedMotion || !cardsRef.current) return
 
-    ctx.add(() => {
-      // Title animation
-      gsap.from(sectionRef.current?.querySelector("h2"), {
-        autoAlpha: 0,
-        y: 30,
-        duration: 0.8,
-        scrollTrigger: {
-          trigger: sectionRef.current,
-          start: "top 80%",
-        },
+    const cards = cardsRef.current.children
+    
+    Array.from(cards).forEach((card, index) => {
+      const direction = index % 2 === 0 ? -60 : 60
+      
+      gsap.set(card, {
+        opacity: 0,
+        x: direction
       })
-
-      const cards = cardsRef.current?.children
-      if (cards) {
-        Array.from(cards).forEach((card, index) => {
-          const direction = index % 2 === 0 ? -60 : 60
-
-          gsap.from(card, {
-            autoAlpha: 0,
-            x: direction,
-            duration: 0.8,
-            delay: index * 0.15,
-            scrollTrigger: {
-              trigger: cardsRef.current,
-              start: "top 80%",
-            },
-          })
+      
+      gsap.to(card, {
+        opacity: 1,
+        x: 0,
+        duration: 0.8,
+        delay: index * 0.15,
+        ease: ANIMATION_CONFIG.scroll.ease,
+        scrollTrigger: {
+          trigger: cardsRef.current,
+          start: "top 80%",
+          toggleActions: "play none none reverse"
+        }
+      })
+      
+      // Hover effect
+      const handleMouseEnter = () => {
+        gsap.to(card, {
+          scale: 1.02,
+          rotateY: index % 2 === 0 ? 2 : -2,
+          duration: ANIMATION_CONFIG.hover.duration,
+          ease: ANIMATION_CONFIG.hover.tilt.ease
         })
       }
+      
+      const handleMouseLeave = () => {
+        gsap.to(card, {
+          scale: 1,
+          rotateY: 0,
+          duration: ANIMATION_CONFIG.hover.duration,
+          ease: ANIMATION_CONFIG.hover.tilt.ease
+        })
+      }
+      
+      card.addEventListener('mouseenter', handleMouseEnter)
+      card.addEventListener('mouseleave', handleMouseLeave)
     })
-  }, [ctx])
+  }, { scope: cardsRef })
 
   return (
     <section ref={sectionRef} className="py-16 md:py-20 bg-ink">
       <div className="container max-w-7xl mx-auto px-6 md:px-8">
-        <div className="text-center mb-12">
+        <div className="text-center mb-12 reveal-item">
           <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-warm-white mb-4">
             Lo que dicen de <span className="text-green-brand">Chanekes</span>
           </h2>
@@ -86,7 +105,8 @@ export default function TestimonialsSection() {
           {testimonials.map((testimonial, index) => (
             <div
               key={index}
-              className="p-8 rounded-2xl bg-gray-dark/70 ring-1 ring-white/10 hover:ring-green-brand/30 transition-all duration-300 shadow-lg hover:shadow-xl"
+              className="testimonial-card p-8 rounded-2xl bg-gray-dark/70 ring-1 ring-white/10 hover:ring-green-brand/30 hover:shadow-xl hover:shadow-green-brand/10 transition-all duration-300"
+              style={{ willChange: 'transform' }}
             >
               <div className="mb-6">
                 <div className="text-5xl text-green-brand mb-4 font-serif">"</div>

@@ -2,9 +2,8 @@
 
 import type React from "react"
 
-import { useEffect, useRef, useState } from "react"
-import { gsap } from "gsap"
-import { useGSAPContext } from "@/lib/gsap"
+import { useRef, useState } from "react"
+import { useGSAP, gsap, initScrollReveal } from "@/lib/gsap"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -13,8 +12,6 @@ import SocialIcons from "./social-icons"
 export default function ContactSection() {
   const sectionRef = useRef<HTMLElement>(null)
   const formRef = useRef<HTMLFormElement>(null)
-  const ctx = useGSAPContext()
-
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -23,26 +20,12 @@ export default function ContactSection() {
   const [formState, setFormState] = useState<"idle" | "loading" | "success" | "error">("idle")
   const [errorMessage, setErrorMessage] = useState("")
 
-  useEffect(() => {
-    if (!ctx || !sectionRef.current) return
-
-    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
-    if (prefersReducedMotion) return
-
-    ctx.add(() => {
-      // Animate content on scroll
-      gsap.from(sectionRef.current?.children || [], {
-        autoAlpha: 0,
-        y: 30,
-        duration: 0.8,
-        stagger: 0.2,
-        scrollTrigger: {
-          trigger: sectionRef.current,
-          start: "top 80%",
-        },
-      })
-    })
-  }, [ctx])
+  // Scroll reveal para los elementos
+  initScrollReveal(sectionRef, '.reveal-item', {
+    yOffset: 30,
+    stagger: 0.2,
+    duration: 0.8
+  })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -106,7 +89,7 @@ export default function ContactSection() {
   return (
     <section id="contacto" ref={sectionRef} className="bg-ink">
       <div className="container max-w-7xl mx-auto px-6 md:px-8 py-16 md:py-20">
-        <div className="text-center mb-16">
+        <div className="text-center mb-16 reveal-item">
           <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-warm-white mb-6">
             Hablemos de <span className="text-green-brand">tu fiesta</span>
           </h2>
@@ -117,7 +100,7 @@ export default function ContactSection() {
 
         <div className="max-w-4xl mx-auto space-y-12">
           {/* Contact Form */}
-          <div className="max-w-2xl mx-auto">
+          <div className="max-w-2xl mx-auto reveal-item">
             <form ref={formRef} onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <Input
@@ -181,7 +164,7 @@ export default function ContactSection() {
             </form>
           </div>
 
-          <div className="bg-gray-dark/70 ring-1 ring-white/10 rounded-2xl overflow-hidden">
+          <div className="bg-gray-dark/70 ring-1 ring-white/10 rounded-2xl overflow-hidden reveal-item">
             <div className="p-6 md:p-8">
               <h3 className="text-2xl font-bold text-warm-white mb-6 text-center">Visítanos</h3>
 
